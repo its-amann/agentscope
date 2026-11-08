@@ -2169,3 +2169,33 @@ class TestRecordKeyTTL(IsolatedAsyncioTestCase):
         value, ttl = await self._value_and_ttl("probe")
         self.assertEqual(value, "new")
         self.assertTrue(0 < ttl <= 60)
+
+
+class TestVoiceProfileTTL(IsolatedAsyncioTestCase):
+    """Voice profiles honor the storage key TTL like every other record."""
+
+    async def asyncSetUp(self) -> None:
+        """Create a fakeredis backed storage with a TTL."""
+        self.storage = make_storage()
+        self.storage.key_ttl = 60
+
+    async def test_upsert_voice_profile_sets_key_ttl(self) -> None:
+        """The voice profile key gets the sliding TTL on write."""
+        from agentscope.app.storage._model._voice_profile import (
+            VoiceProfileData,
+            VoiceProfileRecord,
+        )
+
+        record = VoiceProfileRecord(
+            id="profile-a",
+            user_id="user-1",
+            data=VoiceProfileData(name="Voice A"),
+        )
+        await self.storage.upsert_voice_profile("user-1", record)
+        key = self.storage._key(  # pylint: disable=protected-access
+            self.storage.key_config.voice_profile,
+            user_id="user-1",
+            profile_id="profile-a",
+        )
+        ttl = await self.storage._client.ttl(key)  # pylint: disable=protected-access
+        self.assertGreater(ttl, 0)
