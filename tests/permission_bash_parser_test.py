@@ -1704,6 +1704,17 @@ class BashParserDangerousCommandTest(IsolatedAsyncioTestCase):
             with self.subTest(cmd=cmd):
                 self.assertIsNone(self.parser.check_dangerous_command(cmd))
 
+    async def test_rm_options_stop_at_command_separators(self) -> None:
+        """Test that flags of a later command are not read as rm options."""
+        for cmd in [
+            "rm -r build; cp -f a b",
+            "rm -r build && git clean -f",
+            "rm -r dist | grep -f patterns.txt",
+            "rm -f a.log && rm -r build",
+        ]:
+            with self.subTest(cmd=cmd):
+                self.assertIsNone(self.parser.check_dangerous_command(cmd))
+
     async def test_safe_commands(self) -> None:
         """Test that safe commands are not flagged."""
         safe_commands = [

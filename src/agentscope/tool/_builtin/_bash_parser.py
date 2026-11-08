@@ -196,8 +196,8 @@ def _rm_is_force_recursive(command: str) -> bool:
         recursive = False
         force = False
         for arg in tokens[index + 1 :]:
-            if arg == "--":
-                # Everything after it is an operand, not an option.
+            if arg == "--" or arg in {";", "&", "&&", "|", "||", "|&", ")"}:
+                # "--" ends the options, a separator ends this rm command.
                 break
             if not arg.startswith("-") or arg == "-":
                 continue
