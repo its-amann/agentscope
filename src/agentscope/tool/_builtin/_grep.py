@@ -275,7 +275,9 @@ class Grep(ToolBase):
         delimiter is found by matching the ``<path><delim><number><same
         delim><text>`` shape instead of splitting on the first one.
         """
-        return _CONTEXT_LINE_PATTERN.match(line.rstrip("\r\n")) is not None
+        line = line.rstrip("\r\n")
+        # rg prints "--" between non adjacent context groups, it is not a match
+        return line == "--" or _CONTEXT_LINE_PATTERN.match(line) is not None
 
     def _apply_head_limit(
         self,

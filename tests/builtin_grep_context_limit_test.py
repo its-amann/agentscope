@@ -58,7 +58,36 @@ class GrepContextHeadLimitTest(unittest.IsolatedAsyncioTestCase):
         self.assertFalse(Grep._is_context_line("path/to/log:14:ERROR boom"))
         self.assertTrue(Grep._is_context_line("path/to/log-13-line13: ok"))
         self.assertTrue(Grep._is_context_line("path/to/log-15-line15: ok"))
+        self.assertTrue(Grep._is_context_line("--"))
         # Paths that contain the delimiters themselves stay intact.
         self.assertFalse(
             Grep._is_context_line(r"C:\logs\a-b\server:14:ERROR boom"),
         )
+
+    @unittest.skipUnless(_has_ripgrep(), "ripgrep is required")
+    async def test_head_limit_counts_matches_not_group_separators(
+        self,
+    ) -> None:
+        """Group separator lines from rg must not count toward head_limit."""
+        temp_dir = tempfile.mkdtemp()
+        try:
+            lines = [f"line{index:02d}: all good" for index in range(1, 21)]
+            lines[2] = "line03: ERROR first failure"
+            lines[14] = "line15: ERROR second failure"
+            with open(
+                os.path.join(temp_dir, "events.log"),
+                "w",
+                encoding="utf-8",
+            ) as handle:
+                handle.write("\n".join(lines) + "\n")
+            result = await self.grep.call(
+                pattern="ERROR",
+                path=temp_dir,
+                output_mode="content",
+                context=1,
+                head_limit=2,
+            )
+            text = result.content[0].text
+            self.assertEqual(text.count("ERROR"), 2)
+        finally:
+            shutil.rmtree(temp_dir)
