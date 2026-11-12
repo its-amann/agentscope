@@ -7,9 +7,9 @@ from fnmatch import fnmatch
 from typing import Any
 from urllib.request import url2pathname
 
-import requests
 from pydantic import Field
 
+from ._download import _download_media
 from ._formatter_base import FormatterBase
 from .._logging import logger
 from ..message import (
@@ -217,9 +217,9 @@ class _OpenAIFormatterBase(FormatterBase, ABC):
                     data = base64.b64encode(f.read()).decode("utf-8")
             else:
                 # Remote URL — download and encode
-                response = requests.get(url_str, timeout=30)
-                response.raise_for_status()
-                data = base64.b64encode(response.content).decode("utf-8")
+                data = base64.b64encode(_download_media(url_str)).decode(
+                    "utf-8",
+                )
 
             input_audio_payload = {
                 "data": data,
@@ -267,9 +267,9 @@ class _OpenAIFormatterBase(FormatterBase, ABC):
                 ) as f:
                     data = base64.b64encode(f.read()).decode("utf-8")
             else:
-                response = requests.get(url_str, timeout=30)
-                response.raise_for_status()
-                data = base64.b64encode(response.content).decode("utf-8")
+                data = base64.b64encode(_download_media(url_str)).decode(
+                    "utf-8",
+                )
         else:
             raise ValueError(f"Unsupported file source type: {type(source)}")
 

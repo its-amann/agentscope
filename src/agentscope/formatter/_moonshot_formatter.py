@@ -6,9 +6,9 @@ from fnmatch import fnmatch
 from typing import Any
 from urllib.request import url2pathname
 
-import requests
 from pydantic import Field
 
+from ._download import _download_media
 from ._openai_formatter import _OpenAIFormatterBase
 from .._logging import logger
 from ..message import (
@@ -60,9 +60,9 @@ def _moonshot_format_media_source(
                 encoded = base64.b64encode(f.read()).decode("utf-8")
             url = f"data:{source.media_type};base64,{encoded}"
         else:
-            response = requests.get(url_str, timeout=30)
-            response.raise_for_status()
-            encoded = base64.b64encode(response.content).decode("utf-8")
+            encoded = base64.b64encode(_download_media(url_str)).decode(
+                "utf-8",
+            )
             url = f"data:{source.media_type};base64,{encoded}"
 
     else:
